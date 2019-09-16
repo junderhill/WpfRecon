@@ -22,13 +22,21 @@ namespace WpfRecon
     /// </summary>
     public partial class ResultsPage : Page
     {
+        private ResultPageVM _resultPageVm;
+        private Task scanTask; 
         public ResultsPage()
         {
             InitializeComponent();
-            var RPVM = new ResultPageVM();
-
-            FullResults.Text = (RPVM.DisplayOutput(string.Empty));
+            _resultPageVm = new ResultPageVM();
+            _resultPageVm.ScanOutputChanged += HandleScanOutputChanged;
+            scanTask = resultPageVm.StartScan();
         }
+
+        void HandleScanOutputChanged(object sender, EventArgs e)
+        {
+            FullResults.Text += _resultPageVm.ScanOutput();
+        }
+        
         private void Home_Click(object sender, RoutedEventArgs e)
         {
             // View The Home page  

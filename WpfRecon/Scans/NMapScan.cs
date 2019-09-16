@@ -7,16 +7,16 @@ using System.Diagnostics;
 
 namespace WpfRecon.Scans
 {
-    public class NMapScan
+    public class NMapScan : IDisposable
     {
-    
+        public event EventHandler<string> ScanOutput;
+        private Process myProcess;
 
-        public string RunScan(string IpAddress)
+        public async Task RunScan(string IpAddress)
         {
             try
             {
-                using (Process myProcess = new Process())
-                {
+                myProcess = new Process();
                     myProcess.StartInfo.UseShellExecute = false;
                     //this will use the nmap external tool that is stored in the External Tools folder
                     myProcess.StartInfo.WorkingDirectory = "ExternalTools/";
@@ -35,27 +35,32 @@ namespace WpfRecon.Scans
                     myProcess.StartInfo.RedirectStandardOutput = true;
                     myProcess.StartInfo.RedirectStandardError = true;
 
-                    
+                    myProcess.OutputDataReceived += Process_OutputDataReceived;
 
                     // myProcess.StartInfo.CreateNoWindow = true;
                     myProcess.Start();
-                    
-                    var stdOutSb = new StringBuilder();
-                    while (!myProcess.HasExited)
-                    {
-                        stdOutSb.Append(myProcess.StandardOutput.ReadToEnd());
-                        stdOutSb.Append(myProcess.StandardError.ReadToEnd());
-                    }
-                       
-
-                    return stdOutSb.ToString();
-                }
+                    myProcess.BeginOutputReadLine();
+                    myProcess.BeginErrorReadLine();
+                    myProcess.WaitForExit(); // Even waiting for exit here.
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
                 return e.Message;
             }
+        }
+
+        void Process_OutputDataReceived(object sender, DataReceivedArgs e)
+        {
+            if (!String.IsNullOrEmpty(e.Data))
+            {
+                ScanOutput(e.Data);
+            }
+        }
+
+        public void Dispose()
+        {
+            myProcess.Dispose();
         }
     }
 
